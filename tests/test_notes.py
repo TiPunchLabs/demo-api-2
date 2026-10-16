@@ -34,3 +34,38 @@ def test_create_rejects_empty_text(client: TestClient) -> None:
     response = client.post("/notes", json={"text": ""})
 
     assert response.status_code == 422
+
+
+def test_delete_note(client: TestClient) -> None:
+    """Deleting a note answers 204 and removes it everywhere."""
+    client.post("/notes", json={"text": "hello"})
+
+    response = client.delete("/notes/1")
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert client.get("/notes").json() == []
+    assert client.get("/notes/1").status_code == 404
+
+
+def test_delete_unknown_note_is_404(client: TestClient) -> None:
+    """Deleting a missing note answers 404."""
+    response = client.delete("/notes/42")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Note not found"}
+
+
+def test_delete_rejects_non_integer_id(client: TestClient) -> None:
+    """A non-integer id is a validation error."""
+    assert client.delete("/notes/abc").status_code == 422
+
+
+def test_deleted_id_is_not_reused(client: TestClient) -> None:
+    """A note created after a delete gets a fresh id."""
+    client.post("/notes", json={"text": "first"})
+    client.delete("/notes/1")
+
+    created = client.post("/notes", json={"text": "second"})
+
+    assert created.json() == {"id": 2, "text": "second"}

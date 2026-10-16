@@ -1,4 +1,4 @@
-"""Notes endpoints: list, read, create."""
+"""Notes endpoints: list, read, create, delete."""
 
 from typing import Annotated
 
@@ -37,3 +37,10 @@ def get_note(note_id: int, store: Store) -> Note:
 def create_note(payload: NoteIn, store: Store) -> Note:
     """Create a note."""
     return store.create(payload)
+
+
+@router.delete("/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_note(note_id: int, store: Store) -> None:
+    """Delete one note, 404 if it does not exist."""
+    if not store.delete(note_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
