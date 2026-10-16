@@ -19,6 +19,10 @@ class NoteStore:
         """Return the note with this id, or None."""
         return self._notes.get(note_id)
 
+    def delete(self, note_id: int) -> bool:
+        """Remove the note with this id; return whether it existed."""
+        return self._notes.pop(note_id, None) is not None
+
     def create(self, payload: NoteIn) -> Note:
         """Store a new note and return it with its id."""
         note = Note(id=self._next_id, **payload.model_dump())

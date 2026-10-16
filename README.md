@@ -20,5 +20,6 @@ uv run pytest
 | `GET` | `/notes` | — | `200` list of notes, ascending id | — |
 | `GET` | `/notes/{id}` | — | `200` the note | `404` unknown id |
 | `POST` | `/notes` | `{"text": str}` (1–500 chars) | `201` the note with its `id` | `422` invalid body |
+| `DELETE` | `/notes/{id}` | — | `204` empty body | `404` unknown id, `422` non-integer id |
 
 A note is `{"id": int, "text": str}`.
