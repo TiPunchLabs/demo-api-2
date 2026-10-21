@@ -2,6 +2,8 @@
 
 > Working document behind `SPEC.md`; it does not replace it.
 > Analysis: 2026-10-19, `main` @ `a5eb53a`. Owner decisions applied the same day.
+> Revised 2026-10-21 (FlowForge Phase 8, Prompt 40): alignment with the FlowForge `SPEC.md` contract,
+> see "Revision of 2026-10-21".
 
 ------
 
@@ -38,7 +40,8 @@ No `SPEC.md`, `AGENTS.md`, `docs/` or ADR existed before this analysis.
 ## Confirmed requirements
 
 All rules R-001…R-009 of `SPEC.md` are `CONFIRMED` (README, CLAUDE.md, Issue #1 or owner
-decision). Two of them are not met by the current code — see technical debt.
+decision). Two of them are not met by the current code — see technical debt. One detail is
+explicitly **not** confirmed: the status code of the whitespace-only rejection (Q-07).
 
 ## Observed behaviours, not contractual
 
@@ -62,6 +65,8 @@ decision). Two of them are not met by the current code — see technical debt.
 | C-04 | R-002 (whitespace rejected) vs code (accepted) | Open — TD-01 |
 | C-05 | R-009 (concurrent uniqueness) vs code (no synchronisation) | Open — TD-02 |
 | C-06 | Tests assert concrete ids (`1`, `2`), stricter than the R-004 contract | Accepted: tests describe the current implementation; a future change of id scheme must update them through its Issue, not weaken them silently |
+| C-07 | R-002 / S-005 stated `422` for whitespace-only texts as `CONFIRMED`, while Q-01 decided "rejected" without a code | Fixed 2026-10-21: rejection `CONFIRMED`, status code open (Q-07) |
+| C-08 | R-009 / S-014 also required that no concurrently created note is lost, beyond Q-04 (ids unique) | Fixed 2026-10-21: removed; storing a created note stays covered by F-002 / S-003 |
 
 README's `POST /notes` row still says `1–500 chars` without the non-whitespace rule: README
 describes actual behaviour, and it will be updated by the Issue that fixes TD-01.
@@ -82,17 +87,24 @@ describes actual behaviour, and it will be updated by the Issue that fixes TD-01
 
 ## Test coverage gaps
 
-| Scenario | Status | Missing |
-|---|---|---|
-| S-004 Invalid text | partial | missing `text`, non-string `text`, 501 chars |
-| S-005 Whitespace-only rejected | none | test — will fail until TD-01 is fixed |
-| S-006 500 chars accepted | none | boundary test |
-| S-007 List order | none | multi-note ordering test |
-| S-011 Malformed id | partial | `GET /notes/abc` → 422 |
-| S-013 Client cannot control id | none | `POST` with an existing `id` |
-| S-014 Concurrent creations | none | concurrency test — may fail until TD-02 is fixed |
+| Scenario | Test(s) | Coverage | Missing |
+|---|---|---|---|
+| S-001 | `test_health_returns_ok` | COVERED | — |
+| S-002 | `test_list_is_empty_at_start` | COVERED | — |
+| S-003 | `test_create_then_read` | COVERED | — |
+| S-004 | `test_create_rejects_empty_text` | PARTIAL | missing `text`, non-string `text`, 501 chars, "no new note" check |
+| S-005 | — | NOT_COVERED | test — will fail until TD-01 is fixed; needs Q-07 for the status code |
+| S-006 | — | NOT_COVERED | boundary test |
+| S-007 | — | NOT_COVERED | multi-note ordering test |
+| S-008 | `test_get_unknown_note_is_404` | COVERED | — |
+| S-009 | `test_delete_note` | COVERED | — |
+| S-010 | `test_delete_unknown_note_is_404` | COVERED | — |
+| S-011 | `test_delete_rejects_non_integer_id` | PARTIAL | `GET /notes/abc` → 422 |
+| S-012 | `test_deleted_id_is_not_reused` | COVERED | — |
+| S-013 | — | NOT_COVERED | `POST` with an existing `id` |
+| S-014 | — | NOT_COVERED | concurrency test — may fail until TD-02 is fixed |
 
-Fully covered: S-001, S-002, S-003, S-008, S-009, S-010, S-012.
+COVERED: every THEN is asserted by the cited test. PARTIAL: some only. NOT_COVERED: no test.
 
 Suggested follow-up Issues: (1) tests-only for S-004, S-006, S-007, S-011, S-013;
 (2) TD-01 with S-005; (3) TD-02 with S-014.
@@ -101,11 +113,28 @@ Suggested follow-up Issues: (1) tests-only for S-004, S-006, S-007, S-011, S-013
 
 ## Unresolved questions
 
-- **Q-07 — Status code for whitespace-only text.** R-002 states `422`, by consistency with the
-  other text validation errors; the owner decision said "rejected" without a code. Confirm
-  when the TD-01 Issue is refined.
+- **Q-07 — Status code for whitespace-only text.** The owner decision (Q-01) says "rejected"
+  without a code. `SPEC.md` proposes `422`, by consistency with the other text validation
+  errors, but does not mark it `CONFIRMED`. Decide when the TD-01 Issue is refined.
 - **Q-08 — Client-supplied `id`.** Ignore it (current) or reject the request? Both satisfy
   R-004; to settle only if a future Issue needs it.
+
+------
+
+## Revision of 2026-10-21
+
+Alignment with the FlowForge `SPEC.md` contract before the onboarding validation (no code or
+behaviour change, no new rule):
+
+| Change | Why |
+|---|---|
+| `## 1. Purpose and scope` → `## 1. Objective and scope` | exact section title required by the FlowForge checker (`SPEC contract: FAILED` before) |
+| R-002 / S-005: whitespace-only rejection `CONFIRMED`, status code open | C-07, Q-07 |
+| R-009 / S-014: "never lose a created note" removed | C-08, beyond Q-04 |
+| F-003 lists R-008 | S-002 covers F-003 and R-008; the feature did not cite the rule |
+| `Tested` → `Coverage` (`COVERED` / `PARTIAL` / `NOT_COVERED` + test) | coverage table format of the preparation mission |
+
+`flowforge-spec.sh SPEC.md` (FlowForge v0.1.0): `SPEC contract: PASS`.
 
 ------
 
