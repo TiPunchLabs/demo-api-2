@@ -46,11 +46,25 @@ tests/
 ├── conftest.py      # `client` fixture: fresh app per test
 ├── test_health.py
 └── test_notes.py
+SPEC.md              # functional specification (source of truth)
+docs/
+└── flowforge-spec-review.md   # evidence and open questions behind SPEC.md
 ```
 
-## API
+## Specification and API docs
 
-The API reference lives in the `## API` section of `README.md`. Never document endpoints here.
+- `SPEC.md` is the **functional source of truth**: features (`F-xxx`), rules (`R-xxx`) and
+  GIVEN/WHEN/THEN scenarios (`S-xxx`). Read it before working on an Issue.
+- `README.md` (`## API` section) is the **user-facing** endpoint reference. Never document
+  endpoints here.
+- Any change to contractual behaviour (endpoints, status codes, validation, id rules, scope
+  limits) must update `SPEC.md` in the same PR: add or amend the features, rules and scenarios
+  concerned. Keep existing ids stable; never renumber or reuse a removed id.
+- If an Issue contradicts a `CONFIRMED` rule of `SPEC.md`, do not apply it silently: flag the
+  conflict in the PR description and wait for an owner decision.
+- `OBSERVED` items in `SPEC.md` are implementation details, not requirements. `KNOWN GAP`
+  items are requirements not met yet; only fix one when an Issue asks for it.
+- Evidence and open questions behind `SPEC.md`: `docs/flowforge-spec-review.md`.
 
 ## Commands
 
@@ -82,7 +96,8 @@ uv run pre-commit run --all-files        # all hooks
   No obvious inline comments.
 - New endpoint → new or existing module under `routes/`, registered in `create_app()`,
   with tests in `tests/test_<router>.py` covering success and error cases (404/422),
-  and documented in the `## API` section of `README.md`.
+  documented in the `## API` section of `README.md`, and specified in `SPEC.md`
+  (feature, rules, scenarios).
 - Tests use the `client` fixture; never rely on state left by another test.
 - Dependencies: `uv add <pkg>` / `uv add --dev <pkg>`; commit `uv.lock`. Never edit it by hand.
 - Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`…).
