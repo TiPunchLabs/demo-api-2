@@ -1,8 +1,8 @@
 # Hands pull requests to the FlowForge Reviewer agent (read-only review, one PR comment).
 #
 # No agent logic lives here: everything is in the FlowForge reusable workflow.
-# `@main` is a POC reference (FlowForge has no tag yet); pin to a tag or commit SHA
-# once FlowForge publishes releases.
+# Pinned to FlowForge v0.1.0 by full commit SHA (immutable). All five callers use the same
+# SHA; update them together (FlowForge docs/target-onboarding.md, "Versions and updates").
 #
 # Triggers:
 # - workflow_dispatch: agent PRs are reviewed on demand (or by the review cycle):
@@ -38,7 +38,7 @@ jobs:
       || (github.event.pull_request.head.repo.full_name == github.repository
           && startsWith(github.event.pull_request.head.ref, 'agent/')
           && !endsWith(github.actor, '[bot]'))
-    uses: TiPunchLabs/flowforge/.github/workflows/agent-review.yml@main
+    uses: TiPunchLabs/flowforge/.github/workflows/agent-review.yml@afa60c599fa47643bba45e26dad0e836b0375b69 # v0.1.0
     # Must cover what the called workflow requests; it can only narrow, never widen.
     # Code stays read-only; the only write is the FlowForge comment on the PR.
     permissions:
@@ -53,6 +53,12 @@ jobs:
       # NON-DESTRUCTIVE checks only, as exact rules: a prefix rule such as
       # "Bash(uv run ruff check:*)" would also allow --fix.
       allowed_tools: "Bash(uv sync --locked),Bash(uv run pytest:*),Bash(uv run ruff check .),Bash(uv run ruff format --check .)"
-    # Organization secret (Selected repositories). Explicit contract: never `secrets: inherit`.
+      # GitHub Project sync (FlowForge PR #61): an APPROVE moves the card Review -> Human
+      # validation. Organization variable, unset = 0 = off. The App key only reaches the sync
+      # job, never the Reviewer.
+      project_number: ${{ fromJSON(vars.FLOWFORGE_PROJECT_NUMBER || '0') }}
+      app_client_id: ${{ vars.FLOWFORGE_APP_CLIENT_ID }}
+    # Organization secrets (Selected repositories). Explicit contract: never `secrets: inherit`.
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      app_private_key: ${{ secrets.FLOWFORGE_APP_PRIVATE_KEY }}
